@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bảng xếp hạng mô hình AI — VMLU Leaderboard</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1320; --muted:#94a3b8; --accent:#7c3aed; --accent-2:#06b6d4; --row:#0b1220;
+      --glass: rgba(255,255,255,0.03);
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,#071026 0%, #081324 100%);color:#e6eef8;min-height:100vh;padding:28px}
+    .container{max-width:1100px;margin:0 auto}
+    h1{font-size:20px;margin:0 0 8px}
+    p.lead{color:var(--muted);margin:0 0 18px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;box-shadow:0 6px 30px rgba(2,6,23,0.6)}
+    .table-wrap{overflow:auto;border-radius:8px;margin-top:8px}
+    table{width:100%;border-collapse:collapse;min-width:780px}
+    thead th{position:sticky;top:0;background:rgba(8,12,20,0.6);backdrop-filter:blur(6px);padding:12px 10px;text-align:left;font-size:13px;color:var(--muted)}
+    tbody td{padding:12px 10px;border-top:1px solid rgba(255,255,255,0.02);vertical-align:middle}
+    tbody tr{background:transparent}
+    .rank{font-weight:700;width:72px}
+    .model{display:flex;align-items:center;gap:12px}
+    .avatar{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#4f46e5);display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:white}
+    .meta{display:flex;flex-direction:column}
+    .meta .name{font-weight:600}
+    .meta .tag{font-size:12px;color:var(--muted)}
+    .score{font-weight:700;font-size:16px}
+    .small{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bảng xếp hạng mô hình AI — VMLU Leaderboard</h1>
+    <p class="lead">Dữ liệu được lấy trực tiếp từ API công khai của <a href="https://api.vmlu.ai/leaderboard/get/list" target="_blank">Vmlu.ai</a>.</p>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Model</th>
+              <th>Tổ chức</th>
+              <th>Điểm tổng</th>
+              <th>STEM</th>
+              <th>Khoa học XH</th>
+              <th>Nhân văn</th>
+              <th>Khác</th>
+              <th>Ngày đánh giá</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="9">Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="color:var(--muted);margin-top:8px;font-size:13px">Cập nhật: <span id="last">—</span></div>
+    </div>
+  </div>
+
+  <script>
+//   const API_URL = 'https://api.vmlu.ai/leaderboard/get/list';
+    const API_URL = 'http://localhost:3000/api/ai-leaderboard';
+
+  const tbody = document.getElementById('tbody');
+  const last = document.getElementById('last');
+
+  async function fetchData(){
+    try{
+      const res = await fetch(API_URL);
+      const json = await res.json();
+      const items = json?.data?.items || [];
+      render(items);
+      last.textContent = new Date().toLocaleString();
+    }catch(err){
+      console.error(err);
+      tbody.innerHTML = '<tr><td colspan="9">Lỗi khi tải dữ liệu.</td></tr>';
+    }
+  }
+
+  function render(items){
+    if(!items.length){
+      tbody.innerHTML = '<tr><td colspan="9">Không có dữ liệu.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = items.map(it => {
+      const date = new Date(it.evaluation_date * 1000).toLocaleDateString();
+      return `<tr>
+        <td>${it.score+1}</td>
+        <td><div class="model"><div class="avatar">${(it.model||'')[0]||'?'}</div><div class="meta"><div class="name">${it.model}</div></div></div></td>
+        <td>${it.creator || '—'}</td>
+        <td class="score">${it.total?.toFixed(2) || '—'}</td>
+        <td>${it.stem?.toFixed(2) || '—'}</td>
+        <td>${it.social_science?.toFixed(2) || '—'}</td>
+        <td>${it.humanity?.toFixed(2) || '—'}</td>
+        <td>${it.other?.toFixed(2) || '—'}</td>
+        <td>${date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // cập nhật định kỳ mỗi 60 giây
+  fetchData();
+  setInterval(fetchData, 60000);
+  </script>
+</body>
+</html>
